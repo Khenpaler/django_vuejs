@@ -10,10 +10,39 @@
           </div>
           <div class="flex items-center space-x-4">
             <template v-if="authStore.isAuthenticated">
-              <router-link to="/tasks" class="text-gray-700 hover:text-blue-600 font-medium">Tasks</router-link>
-              <button @click.prevent="logout" class="text-gray-700 hover:text-blue-600 font-medium">Logout</button>
-              <div class="text-sm text-gray-600 border-l pl-4 ml-2">
-                Hello, <span class="font-semibold">{{ authStore.user?.username }}</span>
+              <div class="relative">
+                <button 
+                  @click="isDropdownOpen = !isDropdownOpen" 
+                  class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md hover:bg-gray-50"
+                >
+                  <span class="font-semibold">{{ authStore.user?.username }}</span>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    class="h-5 w-5 transition-transform" 
+                    :class="{ 'rotate-180': isDropdownOpen }"
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                <!-- Dropdown Menu -->
+                <div 
+                  v-if="isDropdownOpen" 
+                  class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                >
+                  <div class="px-4 py-2 text-sm text-gray-500">
+                    Signed in as <span class="block font-medium text-gray-900 mt-0.5">{{ authStore.user?.username }}</span>
+                  </div>
+                  <button 
+                    @click="logout" 
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             </template>
             <template v-else>
@@ -42,13 +71,16 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
+import { ref } from 'vue'
 
 const authStore = useAuthStore()
 const toast = useToast()
+const isDropdownOpen = ref(false)
 
 const logout = async () => {
   try {
     await authStore.logout()
+    isDropdownOpen.value = false
     toast.success('Logged out successfully')
   } catch (error) {
     toast.error('Failed to logout')
