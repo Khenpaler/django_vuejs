@@ -104,9 +104,13 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+
+import { useToast } from 'vue-toastification'
+
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const toast = useToast()
 
 const formData = ref({
   username: '',
@@ -124,15 +128,25 @@ const passwordMismatch = computed(() => {
 })
 
 const register = async () => {
-  if (passwordMismatch.value) return
+  if (passwordMismatch.value) {
+    toast.error('Passwords do not match')
+    return
+  }
   
-  await authStore.register({
-    username: formData.value.username,
-    email: formData.value.email,
-    first_name: formData.value.first_name,
-    last_name: formData.value.last_name,
-    password: formData.value.password,
-    password2: formData.value.confirmPassword
-  })
+  try {
+    await authStore.register({
+      username: formData.value.username,
+      email: formData.value.email,
+      first_name: formData.value.first_name,
+      last_name: formData.value.last_name,
+      password: formData.value.password,
+      password2: formData.value.confirmPassword
+    })
+    toast.success('Account created successfully')
+  } catch (error) {
+    toast.error(typeof authStore.error === 'string' 
+      ? authStore.error 
+      : Object.values(authStore.error || {}).flat().join(', ') || 'Registration failed')
+  }
 }
 </script> 

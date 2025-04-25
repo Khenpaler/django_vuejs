@@ -41,10 +41,17 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from 'vue-toastification'
 
 const authStore = useAuthStore()
+const toast = useToast()
 
 const logout = async () => {
-  await authStore.logout()
+  try {
+    await authStore.logout()
+    toast.success('Logged out successfully')
+  } catch (error) {
+    toast.error('Failed to logout')
+  }
 }
 </script> 

@@ -57,9 +57,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
+import { useToast } from 'vue-toastification'
+
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const toast = useToast()
 
 const formData = ref({
   username: '',
@@ -67,9 +71,16 @@ const formData = ref({
 })
 
 const login = async () => {
-  await authStore.login({
-    username: formData.value.username,
-    password: formData.value.password
-  })
+  try {
+    await authStore.login({
+      username: formData.value.username,
+      password: formData.value.password
+    })
+    toast.success('Logged in successfully')
+  } catch (error) {
+    toast.error(typeof authStore.error === 'string' 
+      ? authStore.error 
+      : 'Failed to login. Please check your credentials.')
+  }
 }
 </script> 

@@ -1,45 +1,44 @@
 import { ref, computed } from 'vue'
+
 import { defineStore } from 'pinia'
-import api from '@/services/api'
+
 import router from '@/router'
 
-// Define types
-interface User {
-  id: number
-  username: string
-  email: string
-}
+import type { UserData, Credentials, UserProfile } from '@/views/auth/types'
 
-interface UserData {
-  username: string
-  email: string
-  password: string
-  password2: string
-  first_name: string
-  last_name: string
-}
-
-interface Credentials {
-  username: string
-  password: string
-}
+import { createApiClient } from './utils/createApiClient'
 
 interface ApiError {
   [key: string]: string[] | string
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<User | null>(null)
+  // Initialize API client
+  const apiClient = createApiClient()
+
+  // State
+  const user = ref<UserProfile | null>(null)
   const token = ref<string | null>(localStorage.getItem('token') || null)
-  const isAuthenticated = computed(() => !!token.value)
   const loading = ref(false)
   const error = ref<string | ApiError | null>(null)
 
+  // Computed
+  const isAuthenticated = computed(() => !!token.value)
+
+  /**
+   * Register a new user
+   * @param userData - User registration data including username, email, and passwords
+   * 
+   * On success:
+   * - Stores the authentication token
+   * - Fetches the user profile
+   * - Redirects to tasks page
+   */
   async function register(userData: UserData) {
     loading.value = true
     error.value = null
     try {
-      const response = await api.register(userData)
+      const response = await apiClient.post('/auth/register/', userData)
       token.value = response.data.token
       if (token.value) {
         localStorage.setItem('token', token.value)
@@ -53,12 +52,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Log in an existing user
+   * @param credentials - User login credentials (username and password)
+   * 
+   * On success:
+   * - Stores the authentication token
+   * - Fetches the user profile
+   * - Redirects to tasks page
+   * 
+   * On failure:
+   * - Clears any partial authentication state
+   * - Sets appropriate error message
+   */
   async function login(credentials: Credentials) {
     loading.value = true
     error.value = null
     try {
       console.log('Attempting login...')
-      const response = await api.login(credentials)
+      const response = await apiClient.post('/auth/login/', credentials)
       console.log('Login response:', response.data)
       
       if (response.data && response.data.token) {
@@ -91,11 +103,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Log out the current user
+   * 
+   * - Attempts to logout on the server
+   * - Clears local authentication state
+   * - Redirects to login page
+   * - Continues with local logout even if server logout fails
+   */
   async function logout() {
     loading.value = true
     try {
       if (token.value) {
-        await api.logout()
+        await apiClient.post('/auth/logout/')
       }
     } catch (err: any) {
       console.error('Logout error:', err)
@@ -108,6 +128,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Fetch the current user's profile
+   * 
+   * - Called after login/registration
+   * - Updates the user state with profile information
+   * - Handles unauthorized errors by clearing auth state
+   * 
+   * @throws Error if token is invalid or request fails
+   */
   async function fetchUserProfile() {
     if (!token.value) {
       console.log('No token available for profile fetch')
@@ -117,7 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       console.log('Fetching user profile...')
-      const response = await api.getProfile()
+      const response = await apiClient.get('/auth/profile/')
       console.log('Profile response:', response.data)
       user.value = response.data
     } catch (err: any) {
