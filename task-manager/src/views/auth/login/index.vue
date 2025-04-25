@@ -72,11 +72,15 @@ const formData = ref({
 
 const login = async () => {
   try {
-    await authStore.login({
+    const success = await authStore.login({
       username: formData.value.username,
       password: formData.value.password
     })
-    toast.success('Logged in successfully')
+    
+    // Only show success toast if login was successful
+    if (success) {
+      toast.success('Logged in successfully')
+    }
   } catch (error) {
     toast.error(typeof authStore.error === 'string' 
       ? authStore.error 

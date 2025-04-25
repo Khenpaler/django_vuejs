@@ -134,7 +134,7 @@ const register = async () => {
   }
   
   try {
-    await authStore.register({
+    const success = await authStore.register({
       username: formData.value.username,
       email: formData.value.email,
       first_name: formData.value.first_name,
@@ -142,7 +142,11 @@ const register = async () => {
       password: formData.value.password,
       password2: formData.value.confirmPassword
     })
-    toast.success('Account created successfully')
+    
+    // Only show success toast if registration was successful
+    if (success) {
+      toast.success('Account created successfully')
+    }
   } catch (error) {
     toast.error(typeof authStore.error === 'string' 
       ? authStore.error 

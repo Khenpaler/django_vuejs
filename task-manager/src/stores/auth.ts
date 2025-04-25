@@ -31,16 +31,23 @@ export const useAuthStore = defineStore('auth', () => {
    * On success:
    * - Fetches the user profile
    * - Redirects to tasks page
+   * @returns boolean indicating if registration was successful
    */
-  async function register(userData: UserData) {
+  async function register(userData: UserData): Promise<boolean> {
     loading.value = true
     error.value = null
     try {
-      await apiClient.post('/auth/register/', userData)
+      const response = await apiClient.post('/auth/register/', userData)
+      // Save token to localStorage
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token)
+      }
       await fetchUserProfile()
       router.push('/tasks')
+      return true
     } catch (err: any) {
       error.value = err.response?.data || 'Registration failed'
+      return false
     } finally {
       loading.value = false
     }
@@ -56,14 +63,20 @@ export const useAuthStore = defineStore('auth', () => {
    * 
    * On failure:
    * - Sets appropriate error message
+   * @returns boolean indicating if login was successful
    */
-  async function login(credentials: Credentials) {
+  async function login(credentials: Credentials): Promise<boolean> {
     loading.value = true
     error.value = null
     try {
       console.log('Attempting login...')
-      await apiClient.post('/auth/login/', credentials)
+      const response = await apiClient.post('/auth/login/', credentials)
       console.log('Login successful, fetching profile...')
+      
+      // Save token to localStorage
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token)
+      }
       
       await fetchUserProfile()
       console.log('Profile fetched, redirecting...')
@@ -71,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Ensure we're authenticated before redirecting
       if (isAuthenticated.value) {
         await router.push('/tasks')
+        return true
       } else {
         throw new Error('Authentication failed after successful login')
       }
@@ -79,6 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = err.response?.data || err.message || 'Login failed'
       // Clear user state on error
       user.value = null
+      return false
     } finally {
       loading.value = false
     }
@@ -99,6 +114,8 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err: any) {
       console.error('Logout error:', err)
     } finally {
+      // Clear token from localStorage
+      localStorage.removeItem('token')
       user.value = null
       loading.value = false
       router.push('/auth/login')
@@ -126,12 +143,24 @@ export const useAuthStore = defineStore('auth', () => {
       // If unauthorized, clear auth
       if (err.response?.status === 401) {
         console.log('Unauthorized, clearing auth state')
+        localStorage.removeItem('token')
         user.value = null
         router.push('/auth/login')
       }
       throw err // Propagate error to calling function
     } finally {
       loading.value = false
+    }
+  }
+
+  // Initialize user state from localStorage token
+  function checkAuth() {
+    const token = localStorage.getItem('token')
+    if (token) {
+      fetchUserProfile().catch(err => {
+        console.error('Failed to restore session:', err)
+        localStorage.removeItem('token')
+      })
     }
   }
 
@@ -143,6 +172,7 @@ export const useAuthStore = defineStore('auth', () => {
     register, 
     login, 
     logout, 
-    fetchUserProfile 
+    fetchUserProfile,
+    checkAuth
   }
 }) 

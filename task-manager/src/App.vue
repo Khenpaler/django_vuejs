@@ -8,22 +8,10 @@ import DefaultLayout from './components/layouts/DefaultLayout.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 
-onMounted(async () => {
-  try {
-    // Check if user is logged in
-    await authStore.fetchUserProfile()
-    
-    // Redirect based on auth status
-    if (authStore.isAuthenticated) {
-      router.push('/tasks')
-    } else {
-      router.push('/auth/login')
-    }
-  } catch (error) {
-    // If there's an error, redirect to login
-    router.push('/auth/login')
-  }
-})
+onMounted(() => {
+  // Use the new checkAuth method
+  authStore.checkAuth()
+})  
 </script>
 
 <template>
