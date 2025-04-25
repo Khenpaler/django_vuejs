@@ -111,7 +111,7 @@ import { computed } from 'vue'
 const props = defineProps<{
   tasks: any[]
   loading: boolean
-  error?: string
+  error?: string | null
 }>()
 
 defineEmits(['toggleStatus', 'editTask', 'deleteTask', 'newTask'])
