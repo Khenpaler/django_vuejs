@@ -10,6 +10,24 @@ taskmanager/
 └── task-manager/           # Frontend Vue.js application
 ```
 
+## Getting Your Network IP Address
+
+Before setting up the applications, you'll need your computer's WiFi IP address for proper connection between frontend and backend:
+
+1. On Linux/macOS, use:
+   ```bash
+   ip addr show
+   # or
+   ifconfig
+   ```
+
+2. On Windows, use:
+   ```bash
+   ipconfig
+   ```
+
+Look for your WiFi interface's IPv4 address (usually starts with 192.168. or 10.0.).
+
 ## Backend Setup (Django)
 
 1. Navigate to the backend directory:
@@ -34,8 +52,19 @@ taskmanager/
    ```
    Edit the `.env` file and update the values as needed:
    - Set a secure `SECRET_KEY`
-   - Update `ALLOWED_HOSTS` if needed
-   - Configure `CORS_ALLOWED_ORIGINS` to match your frontend URL
+   - Set `HOST_IP` to your WiFi IP address (e.g., 192.168.1.100)
+   - Update `ALLOWED_HOSTS` to include your WiFi IP address
+   - Configure `CORS_ALLOWED_ORIGINS` to include `http://YOUR_IP_ADDRESS:5173`
+
+   Example `.env` configuration:
+   ```
+   DEBUG=True
+   SECRET_KEY=your-secret-key-here
+   HOST_IP=192.168.1.100
+   ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.100
+   CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://192.168.1.100:5173
+   DATABASE_URL=sqlite:///db.sqlite3
+   ```
 
 5. Apply database migrations:
    ```bash
@@ -49,9 +78,12 @@ taskmanager/
 
 7. Run the development server:
    ```bash
-   python manage.py runserver
+   # Run the server on your network interface
+   python manage.py runserver 0.0.0.0:8000
    ```
-   The API will be available at `http://localhost:8000`
+   The API will be available at:
+   - Local: `http://localhost:8000`
+   - Network: `http://YOUR_IP_ADDRESS:8000`
 
 ## Frontend Setup (Vue.js)
 
@@ -69,16 +101,23 @@ taskmanager/
    ```bash
    cp .env.example .env.local
    ```
-   Update the `.env.local` file with your backend API URL:
+   Update the `.env.local` file with your backend API URL using your WiFi IP address:
    ```
-   VITE_API_URL=http://localhost:8000
+   VITE_API_URL=http://YOUR_IP_ADDRESS:8000
+   ```
+   Example:
+   ```
+   VITE_API_URL=http://192.168.1.100:8000
    ```
 
 4. Run the development server:
    ```bash
-   npm run dev
+   # Run the server and expose it to the network
+   npm run dev -- --host
    ```
-   The frontend will be available at `http://localhost:5173`
+   The frontend will be available at:
+   - Local: `http://localhost:5173`
+   - Network: `http://YOUR_IP_ADDRESS:5173`
 
 ## API Documentation
 
