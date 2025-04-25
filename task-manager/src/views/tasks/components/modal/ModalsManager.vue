@@ -18,7 +18,7 @@
   <Suspense v-if="isModalVisible('deleteConfirmation')">
     <template #default>
       <DeleteConfirmationModal
-        :loading="modalData.deleteConfirmation?.loading"
+        :loading="modalData.deleteConfirmation?.loading ?? false"
         @close="closeModal('deleteConfirmation')"
         @confirm="handleTaskDelete"
       />
@@ -51,6 +51,8 @@ interface ModalState {
   }
 }
 
+type ModalName = keyof ModalState
+
 const LoadingModalComponent = `
 <div class="fixed inset-0 backdrop-blur-sm bg-gray-500/30 flex items-center justify-center p-4 z-50">
   <div class="bg-white rounded-lg shadow-xl p-8 flex items-center gap-3">
@@ -72,14 +74,14 @@ const isModalVisible = (modalName: string): boolean => {
 
 const isAnyModalVisible = computed(() => visibleModals.value.size > 0)
 
-const showModal = (modalName: string, data?: any) => {
+const showModal = (modalName: ModalName, data?: any) => {
   visibleModals.value.add(modalName)
   if (data) {
     modalData.value[modalName] = data
   }
 }
 
-const closeModal = (modalName: string) => {
+const closeModal = (modalName: ModalName) => {
   visibleModals.value.delete(modalName)
   delete modalData.value[modalName]
 }

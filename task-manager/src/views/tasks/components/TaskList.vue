@@ -41,10 +41,10 @@
     <!-- Task List -->
     <div v-else class="space-y-4">
       <div 
-        v-for="task in tasks" 
+        v-for="task in sortedTasks" 
         :key="task.id" 
-        class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
-        :class="{ 'opacity-75': task.completed }"
+        class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
+        :class="{ 'opacity-50': task.completed }"
       >
         <div class="p-4">
           <div class="flex items-start">
@@ -106,13 +106,22 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   tasks: any[]
   loading: boolean
   error?: string
 }>()
 
 defineEmits(['toggleStatus', 'editTask', 'deleteTask', 'newTask'])
+
+const sortedTasks = computed(() => {
+  return [...props.tasks].sort((a, b) => {
+    if (a.completed === b.completed) return 0
+    return a.completed ? 1 : -1
+  })
+})
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return 'No due date'

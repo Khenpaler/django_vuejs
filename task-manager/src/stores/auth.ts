@@ -18,19 +18,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   // State
   const user = ref<UserProfile | null>(null)
-  const token = ref<string | null>(localStorage.getItem('token') || null)
   const loading = ref(false)
   const error = ref<string | ApiError | null>(null)
 
   // Computed
-  const isAuthenticated = computed(() => !!token.value)
+  const isAuthenticated = computed(() => !!user.value)
 
   /**
    * Register a new user
    * @param userData - User registration data including username, email, and passwords
    * 
    * On success:
-   * - Stores the authentication token
    * - Fetches the user profile
    * - Redirects to tasks page
    */
@@ -38,13 +36,9 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await apiClient.post('/auth/register/', userData)
-      token.value = response.data.token
-      if (token.value) {
-        localStorage.setItem('token', token.value)
-        await fetchUserProfile()
-        router.push('/tasks')
-      }
+      await apiClient.post('/auth/register/', userData)
+      await fetchUserProfile()
+      router.push('/tasks')
     } catch (err: any) {
       error.value = err.response?.data || 'Registration failed'
     } finally {
@@ -57,12 +51,10 @@ export const useAuthStore = defineStore('auth', () => {
    * @param credentials - User login credentials (username and password)
    * 
    * On success:
-   * - Stores the authentication token
    * - Fetches the user profile
    * - Redirects to tasks page
    * 
    * On failure:
-   * - Clears any partial authentication state
    * - Sets appropriate error message
    */
   async function login(credentials: Credentials) {
@@ -70,34 +62,23 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       console.log('Attempting login...')
-      const response = await apiClient.post('/auth/login/', credentials)
-      console.log('Login response:', response.data)
+      await apiClient.post('/auth/login/', credentials)
+      console.log('Login successful, fetching profile...')
       
-      if (response.data && response.data.token) {
-        const receivedToken = response.data.token as string
-        token.value = receivedToken
-        localStorage.setItem('token', receivedToken)
-        console.log('Token stored, fetching profile...')
-        
-        await fetchUserProfile()
-        console.log('Profile fetched, redirecting...')
-        
-        // Ensure we're authenticated before redirecting
-        if (isAuthenticated.value) {
-          await router.push('/tasks')
-        } else {
-          throw new Error('Authentication failed after successful login')
-        }
+      await fetchUserProfile()
+      console.log('Profile fetched, redirecting...')
+      
+      // Ensure we're authenticated before redirecting
+      if (isAuthenticated.value) {
+        await router.push('/tasks')
       } else {
-        throw new Error('No token received from server')
+        throw new Error('Authentication failed after successful login')
       }
     } catch (err: any) {
       console.error('Login error:', err)
       error.value = err.response?.data || err.message || 'Login failed'
-      // Clear any partial auth state on error
-      token.value = null
+      // Clear user state on error
       user.value = null
-      localStorage.removeItem('token')
     } finally {
       loading.value = false
     }
@@ -114,15 +95,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     loading.value = true
     try {
-      if (token.value) {
-        await apiClient.post('/auth/logout/')
-      }
+      await apiClient.post('/auth/logout/')
     } catch (err: any) {
       console.error('Logout error:', err)
     } finally {
-      token.value = null
       user.value = null
-      localStorage.removeItem('token')
       loading.value = false
       router.push('/auth/login')
     }
@@ -135,14 +112,9 @@ export const useAuthStore = defineStore('auth', () => {
    * - Updates the user state with profile information
    * - Handles unauthorized errors by clearing auth state
    * 
-   * @throws Error if token is invalid or request fails
+   * @throws Error if request fails
    */
   async function fetchUserProfile() {
-    if (!token.value) {
-      console.log('No token available for profile fetch')
-      return
-    }
-    
     loading.value = true
     try {
       console.log('Fetching user profile...')
@@ -151,12 +123,10 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.data
     } catch (err: any) {
       console.error('Error fetching user profile:', err)
-      // If token is invalid, clear auth
+      // If unauthorized, clear auth
       if (err.response?.status === 401) {
         console.log('Unauthorized, clearing auth state')
-        token.value = null
         user.value = null
-        localStorage.removeItem('token')
         router.push('/auth/login')
       }
       throw err // Propagate error to calling function
@@ -166,8 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return { 
-    user, 
-    token, 
+    user,
     isAuthenticated, 
     loading, 
     error, 

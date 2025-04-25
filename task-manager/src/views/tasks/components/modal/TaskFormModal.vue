@@ -91,6 +91,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineProps, defineEmits, computed } from 'vue'
+import type { TaskFormData } from '../../types'
 
 const props = defineProps({
   task: {
@@ -107,7 +108,7 @@ const emit = defineEmits(['close', 'save'])
 
 const isEditing = computed(() => !!props.task)
 
-const form = ref({
+const form = ref<TaskFormData>({
   title: '',
   description: '',
   due_date: new Date().toISOString().split('T')[0],
@@ -127,6 +128,12 @@ onMounted(() => {
 })
 
 const handleSubmit = () => {
-  emit('save', form.value)
+  const formData = {
+    ...form.value
+  }
+  if (props.task?.id) {
+    formData.id = props.task.id
+  }
+  emit('save', formData)
 }
 </script> 
